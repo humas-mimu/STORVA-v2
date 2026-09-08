@@ -1,0 +1,2 @@
+# Persistent local development database (must survive source updates)
+.storva-data/

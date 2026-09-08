@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@storva/shared-types": ["packages/shared-types/src/index.ts"],
+      "@storva/protocol": ["packages/protocol/src/index.ts"],
+      "@storva/validation": ["packages/validation/src/index.ts"],
+      "@storva/shared-auth": ["packages/shared-auth/src/index.ts"]
+    }
+  }
+}

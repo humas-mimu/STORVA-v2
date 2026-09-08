@@ -1,0 +1,24 @@
+{
+  "name": "storva",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "pnpm --filter @storva/web dev",
+    "dev:agent": "pnpm --filter @storva/agent dev",
+    "build": "pnpm --filter @storva/web build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "storva:data:init": "node scripts/init-storva-data.mjs",
+    "storva:data:backup": "node scripts/backup-storva-data.mjs",
+    "storva:data:check": "node scripts/check-storva-data.mjs",
+    "storva:data:migrate-legacy": "node scripts/migrate-legacy-storva-db.mjs",
+    "storva:data:preupdate": "node scripts/preupdate-storva-data.mjs"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  },
+  "packageManager": "pnpm@11.24.0"
+}

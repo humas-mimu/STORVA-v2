@@ -1,0 +1,53 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@storva/shared-types": [
+        "../../packages/shared-types/src/index.ts"
+      ],
+      "@storva/protocol": [
+        "../../packages/protocol/src/index.ts"
+      ],
+      "@storva/validation": [
+        "../../packages/validation/src/index.ts"
+      ],
+      "@storva/shared-auth": [
+        "../../packages/shared-auth/src/index.ts"
+      ],
+      "@storva/shared-auth/totp": [
+        "../../packages/shared-auth/src/totp.ts"
+      ]
+    },
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

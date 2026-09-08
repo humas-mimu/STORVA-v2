@@ -1,0 +1,30 @@
+{
+  "name": "@storva/agent",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@storva/shared-auth": "workspace:*",
+    "argon2": "^0.43.0",
+    "better-sqlite3": "^11",
+    "chokidar": "^4",
+    "dotenv": "^17.4.2",
+    "express": "^5",
+    "jose": "^5",
+    "multer": "^2",
+    "sharp": "^0.35.3",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7",
+    "@types/express": "^5",
+    "@types/multer": "^1",
+    "@types/node": "^22",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

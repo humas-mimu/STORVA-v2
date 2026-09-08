@@ -1,0 +1,18 @@
+node_modules
+.next
+dist
+build
+.env
+.env.local
+*.pem
+*.key
+*.secret
+data/
+uploads/
+thumbnails/
+logs/
+.turbo
+.DS_Store
+
+# Never keep Storva runtime state in source control
+.storva-data/

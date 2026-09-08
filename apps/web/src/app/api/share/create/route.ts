@@ -34,10 +34,9 @@ function getBaseUrl(req: NextRequest) {
   if (!/^(localhost|127\.0\.0\.1|::1)(:|$)/.test(host)) return `${protocol}://${host}`
 
   const port = host.match(/:(\d+)$/)?.[1] || '8787'
-  const addresses = Object.values(networkInterfaces()).flat().filter(
-    (address): address is NonNullable<typeof address> =>
-      Boolean(address) && address.family === 'IPv4' && !address.internal,
-  )
+  const addresses = Object.values(networkInterfaces())
+    .flatMap((interfaces) => interfaces ?? [])
+    .filter((address) => address.family === 'IPv4' && !address.internal)
   const lanIp =
     addresses.find((a) => a.address.startsWith('192.168.'))?.address ||
     addresses.find((a) => a.address.startsWith('10.'))?.address ||
@@ -114,8 +113,8 @@ export async function POST(req: NextRequest) {
     let file = relativePath
       ? await repository.fileMetadata.findFirst({ where: { relativePath } })
       : fileId
-      ? await repository.fileMetadata.findUnique({ where: { id: fileId } })
-      : null
+        ? await repository.fileMetadata.findUnique({ where: { id: fileId } })
+        : null
 
     if (!file && relativePath) {
       const name = relativePath.split('/').filter(Boolean).pop() || relativePath

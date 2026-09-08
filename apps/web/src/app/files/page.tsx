@@ -12,7 +12,7 @@ import {
   List as ListIcon, ChevronRight, Download, Trash2, Edit2,
   FileText, Image as ImageIcon, Video, Music, Archive, File,
   X, Eye, RefreshCw, CheckCircle, AlertCircle, ArrowUpDown,
-  HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy
+  HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy, Plus
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -238,6 +238,7 @@ function FilesContent() {
   // Upload
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isFabOpen, setIsFabOpen] = useState(false)
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -549,73 +550,119 @@ function FilesContent() {
         <Sidebar />
 
         <section className="flex-1 min-h-0 flex flex-col space-y-5 overflow-y-auto p-4 md:p-0 md:h-full">
-          {/* Header */}
-          <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 ring-slate-200/70">
-            <div>
-              <div className="flex items-center gap-2">
-                <FolderOpen className="text-indigo-600" size={24} />
-                <h1 className="text-2xl font-bold tracking-tight text-slate-800">Files & Folders</h1>
+          <header className="sticky top-0 z-20 rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 ring-slate-200/70">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="text-indigo-600" size={24} />
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-800">Files & Folders</h1>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {activeVol
+                    ? `Browsing: ${activeVol.storagePath}`
+                    : 'No active storage volume'}
+                </p>
               </div>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {activeVol
-                  ? `Browsing: ${activeVol.storagePath}`
-                  : 'No active storage volume'}
-              </p>
+
+              <div className="hidden items-center gap-2 md:flex">
+                <input
+                  id="file-upload-input"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                />
+                {user && (
+                  <>
+                    <button
+                      onClick={() => document.getElementById('file-upload-input')?.click()}
+                      disabled={isUploading || !activeVol}
+                      className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/25 hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      <Upload size={16} />
+                      {isUploading ? 'Uploading...' : 'Upload'}
+                    </button>
+                    <button
+                      onClick={() => setIsNewFolderOpen(true)}
+                      disabled={!activeVol}
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <FolderPlus size={16} className="text-indigo-600" />
+                      New Folder
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={loadFiles}
+                  title="Refresh"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                >
+                  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                id="file-upload-input"
-                type="file"
-                multiple
-                className="hidden"
-                onChange={(e) => handleFileUpload(e.target.files)}
-              />
-              {user && (
-                <>
-                  <button
-                    onClick={() => document.getElementById('file-upload-input')?.click()}
-                    disabled={isUploading || !activeVol}
-                    className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/25 hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    <Upload size={16} />
-                    {isUploading ? 'Uploading...' : 'Upload'}
-                  </button>
-                  <button
-                    onClick={() => setIsNewFolderOpen(true)}
-                    disabled={!activeVol}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <FolderPlus size={16} className="text-indigo-600" />
-                    New Folder
-                  </button>
-                </>
-              )}
+            <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <VolumeSwitcher volumes={volumes} activeVol={activeVol} onChange={handleVolumeChange} />
+                <button
+                  onClick={loadFiles}
+                  title="Refresh"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100 md:hidden"
+                >
+                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                </button>
+              </div>
 
-              <button
-                onClick={loadFiles}
-                title="Refresh"
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
-              >
-                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1 md:w-56">
+                  <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Filter files..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-xl bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  title="Change sort order"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+                >
+                  <ArrowUpDown size={14} />
+                </button>
+                <div className="flex shrink-0 rounded-xl bg-slate-100 p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    title="Grid view"
+                    className={`rounded-lg p-1.5 transition ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <Grid size={16} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    title="List view"
+                    className={`rounded-lg p-1.5 transition ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <ListIcon size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
           </header>
 
-          {/* Breadcrumb + controls */}
-          <div className="sticky top-[88px] z-10 flex flex-col gap-3 rounded-[1.25rem] bg-white/95 backdrop-blur-md p-4 shadow-sm ring-1 ring-slate-200/70 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              {currentPath && (
-                <button
-                  onClick={handleBack}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 transition"
-                  title="Go back"
-                >
-                  <ArrowLeft size={16} />
-                </button>
-              )}
-              <VolumeSwitcher volumes={volumes} activeVol={activeVol} onChange={handleVolumeChange} />
-              <nav className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+          <div className="sticky top-[88px] z-10 flex items-center gap-3 rounded-[1.25rem] bg-white/95 p-4 shadow-sm ring-1 ring-slate-200/70 backdrop-blur-md">
+            {currentPath && (
+              <button
+                onClick={handleBack}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                title="Go back"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <nav className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
               {breadcrumbs.map((crumb, idx) => {
                 const isLast = idx === breadcrumbs.length - 1
                 return (
@@ -624,9 +671,9 @@ function FilesContent() {
                     <button
                       onClick={() => navigateToFolder(crumb.path)}
                       className={`flex items-center gap-1.5 rounded-lg px-2 py-1 transition ${isLast
-                          ? 'bg-indigo-50 font-bold text-indigo-700'
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                        }`}
+                        ? 'bg-indigo-50 font-bold text-indigo-700'
+                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                      }`}
                     >
                       {idx === 0 ? <HardDrive size={14} /> : null}
                       {crumb.name}
@@ -634,42 +681,49 @@ function FilesContent() {
                   </React.Fragment>
                 )
               })}
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 md:w-56">
-                <Search size={14} className="absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Filter files..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
-              >
-                <ArrowUpDown size={14} />
-              </button>
-              <div className="flex rounded-xl bg-slate-100 p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`rounded-lg p-1.5 transition ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  <Grid size={16} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`rounded-lg p-1.5 transition ${viewMode === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  <ListIcon size={16} />
-                </button>
-              </div>
-            </div>
+            </nav>
           </div>
+
+          <input
+            id="file-upload-input-mobile"
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFileUpload(e.target.files)}
+          />
+          {user && (
+            <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 md:hidden">
+              {isFabOpen && (
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    onClick={() => { setIsFabOpen(false); document.getElementById('file-upload-input-mobile')?.click() }}
+                    disabled={isUploading || !activeVol}
+                    className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-lg ring-1 ring-slate-200 disabled:opacity-50"
+                  >
+                    <Upload size={17} className="text-indigo-600" />
+                    {isUploading ? 'Uploading...' : 'Upload'}
+                  </button>
+                  <button
+                    onClick={() => { setIsFabOpen(false); setIsNewFolderOpen(true) }}
+                    disabled={!activeVol}
+                    className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-lg ring-1 ring-slate-200 disabled:opacity-50"
+                  >
+                    <FolderPlus size={17} className="text-indigo-600" />
+                    New Folder
+                  </button>
+                </div>
+              )}
+              <button
+                id="files-mobile-actions"
+                onClick={() => setIsFabOpen((open) => !open)}
+                aria-label={isFabOpen ? 'Close file actions' : 'Open file actions'}
+                aria-expanded={isFabOpen}
+                className={`flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/35 transition duration-200 hover:bg-indigo-700 ${isFabOpen ? 'rotate-45' : ''}`}
+              >
+                <Plus size={26} />
+              </button>
+            </div>
+          )}
 
           {/* File listing */}
           <div className="flex-1 rounded-[1.5rem] bg-white p-5 shadow-sm ring-1 ring-slate-200/70">

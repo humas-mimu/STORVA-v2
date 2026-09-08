@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Sidebar, RightPanel } from '@/components/dashboard'
 import { useAuth } from '@/lib/auth'
@@ -99,12 +99,24 @@ function VolumeSwitcher({
   onChange: (vol: Volume) => void
 }) {
   const [open, setOpen] = useState(false)
+  const switcherRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null
+      if (target && !switcherRef.current?.contains(target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [open])
+
   const accessible = volumes.filter((v) => v.accessible)
 
   if (accessible.length <= 1) return null // single volume — no switcher needed
 
   return (
-    <div className="relative">
+    <div ref={switcherRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
@@ -239,6 +251,17 @@ function FilesContent() {
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isFabOpen, setIsFabOpen] = useState(false)
+  const fabRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isFabOpen) return
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null
+      if (target && !fabRef.current?.contains(target)) setIsFabOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [isFabOpen])
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -692,7 +715,7 @@ function FilesContent() {
             onChange={(e) => handleFileUpload(e.target.files)}
           />
           {user && (
-            <div className="fixed bottom-13 right-6 z-40 flex flex-col items-end gap-3 md:hidden">
+            <div ref={fabRef} className="fixed bottom-13 right-6 z-40 flex flex-col items-end gap-3 md:hidden">
               {isFabOpen && (
                 <div className="flex flex-col items-end gap-2">
                   <button
@@ -911,8 +934,8 @@ function FilesContent() {
 
       {/* NEW FOLDER MODAL */}
       {isNewFolderOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsNewFolderOpen(false) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><FolderPlus className="text-indigo-600" size={22} /><h3 className="text-lg font-bold text-slate-800">Create New Folder</h3></div>
               <button onClick={() => setIsNewFolderOpen(false)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100"><X size={18} /></button>
@@ -934,8 +957,8 @@ function FilesContent() {
 
       {/* RENAME MODAL */}
       {renamingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setRenamingItem(null) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><Edit2 className="text-indigo-600" size={22} /><h3 className="text-lg font-bold text-slate-800">Rename</h3></div>
               <button onClick={() => setRenamingItem(null)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100"><X size={18} /></button>
@@ -957,8 +980,8 @@ function FilesContent() {
 
       {/* DELETE MODAL */}
       {deletingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setDeletingItem(null) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"><Trash2 size={24} /></div>
               <div>
@@ -977,8 +1000,8 @@ function FilesContent() {
 
       {/* SHARE MODAL */}
       {isShareModalOpen && shareItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsShareModalOpen(false) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Share2 className="text-indigo-600" size={22} />
@@ -1097,8 +1120,8 @@ function FilesContent() {
 
       {/* PRIVACY MODAL */}
       {isPrivacyModalOpen && privacyItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsPrivacyModalOpen(false) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><Lock className="text-indigo-600" size={22} /><h3 className="text-lg font-bold text-slate-800">Private access</h3></div>
               <button onClick={() => setIsPrivacyModalOpen(false)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100"><X size={18} /></button>
@@ -1127,8 +1150,8 @@ function FilesContent() {
 
       {/* PREVIEW MODAL */}
       {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewItem(null) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 p-5">
               <div className="flex items-center gap-3">
                 {getItemIcon(previewItem)}

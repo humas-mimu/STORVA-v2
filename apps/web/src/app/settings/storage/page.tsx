@@ -408,8 +408,8 @@ export default function StorageSettingsPage() {
 
       {/* ── Add Volume Modal ── */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowAdd(false); setAddError(null) } }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HardDrive className="text-indigo-600" size={22} />

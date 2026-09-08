@@ -250,8 +250,8 @@ export default function TrashPage() {
 
       {/* CONFIRM EMPTY MODAL */}
       {confirmEmpty && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmEmpty(false) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
                 <AlertTriangle size={24} />
@@ -284,8 +284,8 @@ export default function TrashPage() {
 
       {/* CONFIRM SINGLE DELETE */}
       {itemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setItemToDelete(null) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
                 <Trash2 size={24} />

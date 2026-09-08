@@ -208,8 +208,8 @@ export default function RecentPage() {
 
       {/* PREVIEW MODAL */}
       {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewItem(null) }}>
+          <div onMouseDown={(e) => e.stopPropagation()} className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 p-5">
               <div className="flex items-center gap-3">
                 {getItemIcon(previewItem)}

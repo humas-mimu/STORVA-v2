@@ -251,7 +251,7 @@ function FilesContent() {
     if (user?.role?.toLowerCase() !== 'admin') return
     fetch('/api/admin/users').then((r) => r.ok ? r.json() : null).then((data) => {
       if (data?.users) setAvailableUsers(data.users.filter((u: any) => u.role?.toLowerCase() !== 'admin'))
-    }).catch(() => {})
+    }).catch(() => { })
   }, [user])
 
   const openPrivacy = async (item: FileItem) => {
@@ -673,7 +673,7 @@ function FilesContent() {
                       className={`flex items-center gap-1.5 rounded-lg px-2 py-1 transition ${isLast
                         ? 'bg-indigo-50 font-bold text-indigo-700'
                         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                      }`}
+                        }`}
                     >
                       {idx === 0 ? <HardDrive size={14} /> : null}
                       {crumb.name}
@@ -692,7 +692,7 @@ function FilesContent() {
             onChange={(e) => handleFileUpload(e.target.files)}
           />
           {user && (
-            <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 md:hidden">
+            <div className="fixed bottom-13 right-6 z-40 flex flex-col items-end gap-3 md:hidden">
               {isFabOpen && (
                 <div className="flex flex-col items-end gap-2">
                   <button
@@ -1003,11 +1003,10 @@ function FilesContent() {
                     <button
                       type="button"
                       onClick={() => setShareAccessType('PUBLIC')}
-                      className={`rounded-xl p-3 text-left text-xs font-semibold transition ${
-                        shareAccessType === 'PUBLIC'
+                      className={`rounded-xl p-3 text-left text-xs font-semibold transition ${shareAccessType === 'PUBLIC'
                           ? 'bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500'
                           : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       🌐 Publik
                       <p className="mt-0.5 text-[10px] font-normal text-slate-400">Siapa saja bisa lihat</p>
@@ -1016,11 +1015,10 @@ function FilesContent() {
                     <button
                       type="button"
                       onClick={() => setShareAccessType('USER')}
-                      className={`rounded-xl p-3 text-left text-xs font-semibold transition ${
-                        shareAccessType === 'USER'
+                      className={`rounded-xl p-3 text-left text-xs font-semibold transition ${shareAccessType === 'USER'
                           ? 'bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500'
                           : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       🔒 User (Harus Login)
                       <p className="mt-0.5 text-[10px] font-normal text-slate-400">Wajib login akun</p>

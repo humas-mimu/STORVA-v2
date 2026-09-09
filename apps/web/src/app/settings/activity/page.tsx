@@ -4,6 +4,7 @@ import { Sidebar, RightPanel } from '@/components/dashboard'
 import { Activity as ActivityIcon, FileText, FolderOpen, Upload, Trash2, Share2, RefreshCw, Download, LockKeyhole, UnlockKeyhole } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
+import { formatDate } from '@/lib/format-date'
 type Activity = {
   id: string
   userId: string
@@ -41,7 +42,7 @@ function formatTime(dateStr: string) {
   if (diffH < 24) return `${diffH}h ago`
   const diffD = Math.floor(diffH / 24)
   if (diffD < 7) return `${diffD}d ago`
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDate(d)
 }
 
 export default function ActivitySettingsPage() {

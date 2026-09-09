@@ -10,6 +10,7 @@ import {
   AlertTriangle, ArrowLeft, ChevronRight, Download, Eye, File, FileText, Folder, Grid, Image as ImageIcon,
   List as ListIcon, Lock, Music, ShieldAlert, Video, X
 } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 type ShareData = {
   id: string
@@ -47,10 +48,6 @@ function formatBytes(bytes = 0) {
   return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`
 }
 
-function formatDate(value: string) {
-  if (!value) return '-'
-  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
 
 function effectiveMime(item: Pick<FileItem, 'mimeType' | 'name'>) {
   const mime = String(item.mimeType || '')

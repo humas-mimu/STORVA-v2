@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { formatDateTime } from '@/lib/format-date'
 export default function UsersPage() {
   const router = useRouter()
   const [users, setUsers] = useState<any[]>([])
@@ -112,7 +113,7 @@ export default function UsersPage() {
                     {u.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{new Date(u.createdAt).toLocaleString()}</td>
+                <td className="px-4 py-3 text-slate-500">{formatDateTime(u.createdAt)}</td>
                 <td className="px-4 py-3 text-right">
                   <button 
                     className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100" 

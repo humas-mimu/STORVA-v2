@@ -1,15 +1,25 @@
 import { spawnSync } from 'node:child_process'
 import process from 'node:process'
 
-const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+const pnpmCli = process.env.npm_execpath
+const fallbackPnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
-function run(label, args, options = {}) {
+function run(label, args) {
   console.log(`[STORVA] ${label}`)
-  const result = spawnSync(pnpm, args, {
+
+  // During pnpm lifecycle scripts, npm_execpath points to the actual pnpm
+  // JavaScript entrypoint. Running it with the current Node executable avoids
+  // Windows spawnSync EINVAL issues caused by spawning pnpm.cmd directly.
+  const command = pnpmCli ? process.execPath : fallbackPnpm
+  const commandArgs = pnpmCli ? [pnpmCli, ...args] : args
+
+  const result = spawnSync(command, commandArgs, {
     stdio: 'inherit',
+    cwd: process.cwd(),
+    env: process.env,
     shell: false,
-    ...options,
   })
+
   if (result.error) throw result.error
   if (result.status !== 0) {
     process.exit(result.status ?? 1)

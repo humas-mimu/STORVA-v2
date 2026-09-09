@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+import { formatDate } from '@/lib/format-date'
 type FileItem = {
   name: string
   relativePath: string
@@ -46,10 +47,7 @@ function formatBytes(bytes: number = 0) {
   return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`
 }
 
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
+
 
 async function copyTextToClipboard(text: string) {
   if (navigator.clipboard?.writeText) {

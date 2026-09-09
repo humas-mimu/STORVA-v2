@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
+import { formatDate } from '@/lib/format-date'
 type FileItem = {
   name: string
   relativePath: string
@@ -37,17 +38,7 @@ function formatBytes(bytes: number = 0) {
   return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`
 }
 
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+
 
 function getItemIcon(item: FileItem) {
   switch (item.category) {

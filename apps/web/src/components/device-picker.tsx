@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Server, CheckCircle2, Circle } from 'lucide-react'
 
+import { formatTime } from '@/lib/format-date'
 export function DevicePicker() {
   const [devices, setDevices] = useState<any[]>([])
   const [active, setActive] = useState<string | null>(null)
@@ -56,7 +57,7 @@ export function DevicePicker() {
               >
                 <div>
                   <div className="text-sm font-medium text-slate-700">{d.deviceName}</div>
-                  <div className="text-xs text-slate-500">v{d.agentVersion} • seen {new Date(d.lastSeen).toLocaleTimeString()}</div>
+                  <div className="text-xs text-slate-500">v{d.agentVersion} • seen {formatTime(d.lastSeen)}</div>
                 </div>
                 {isActive ? (
                   <CheckCircle2 size={18} className="text-indigo-600" />

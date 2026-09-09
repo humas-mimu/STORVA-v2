@@ -132,12 +132,16 @@ Dari **root project**:
 
 ```bash
 pnpm install
+
+> **Otomatis:** `pnpm install` sekarang menjalankan setup project: generate Prisma Client,
+> inisialisasi persistent data bila aman, lalu pengecekan data. Git, Node.js, pnpm,
+> dan build tools OS tetap harus dipasang manual. PostgreSQL migration tetap manual.
 ```
 
 Kemudian generate Prisma Client:
 
 ```bash
-pnpm --filter @storva/web exec prisma generate
+# Prisma Client sudah di-generate otomatis oleh pnpm install
 ```
 
 ---
@@ -559,7 +563,7 @@ pnpm install
 Generate Prisma:
 
 ```bash
-pnpm --filter @storva/web exec prisma generate
+# Prisma Client sudah di-generate otomatis oleh pnpm install
 ```
 
 Validasi data:

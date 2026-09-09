@@ -128,48 +128,27 @@ scripts/
 
 ## 4. Install Dependency
 
-Dari **root project**:
+pnpm install
+
+> **Otomatis:** `pnpm install` menjalankan seluruh setup project yang aman: install dependency, generate Prisma Client, inisialisasi persistent data bila belum ada dan aman, lalu menjalankan pengecekan persistent data.
+>
+> **Tetap manual:** Git, Node.js, pnpm, build tools/native dependencies OS, serta PostgreSQL migration.
+
+### Catatan penting
+
+Tidak perlu menjalankan `prisma generate` secara manual untuk instalasi normal. Jika `pnpm install` mendeteksi database lama, storage yang sudah berisi file, atau kondisi yang berisiko membuat metadata terputus dari file, installer akan berhenti dan meminta proses migrasi/restore yang eksplisit.
+
+Untuk PostgreSQL production, migration juga **tidak** dijalankan otomatis. Jalankan secara eksplisit setelah konfigurasi database siap:
 
 ```bash
-pnpm install
+pnpm prisma:migrate
 ```
 
-Kemudian generate Prisma Client:
+Jika hanya ingin menjalankan ulang pengecekan persistent data:
 
 ```bash
-pnpm --filter @storva/web exec prisma generate --schema ../../prisma/schema.prisma
+pnpm storva:data:check
 ```
-
-### Catatan Windows: `prisma` tidak ditemukan
-
-Jangan menjalankan `prisma generate` langsung jika muncul error:
-
-```text
-'prisma' is not recognized as an internal or external command
-```
-
-Gunakan binary Prisma lokal melalui `pnpm` dari root project:
-
-```powershell
-pnpm --filter @storva/web exec prisma generate --schema ../../prisma/schema.prisma
-```
-
-Alternatif dari direktori `apps/web`:
-
-```powershell
-pnpm exec prisma generate --schema prisma/schema.prisma
-```
-
-Perintah `pnpm exec` memakai Prisma yang terpasang di dependency project. Tidak perlu memasang Prisma secara global.
-
-Jika perintah tersebut menjalankan `pnpm add prisma@...` lalu gagal, pastikan dependency sudah terpasang dari root project dan ulangi:
-
-```powershell
-pnpm install
-pnpm --filter @storva/web exec prisma generate --schema ../../prisma/schema.prisma
-```
-
----
 
 ## 5. Konfigurasi Environment Web
 

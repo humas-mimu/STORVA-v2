@@ -61,8 +61,11 @@ The mock database contains application state such as users, sessions, devices, f
 # 1. Install dependencies (run from the repository root)
 pnpm install
 
-# 2. Generate Prisma client (required for the web app)
-pnpm --filter @storva/web exec prisma generate
+> **Otomatis:** `pnpm install` sekarang menjalankan setup project: generate Prisma Client,
+> inisialisasi persistent data bila aman, lalu pengecekan data. Git, Node.js, pnpm,
+> dan build tools OS tetap harus dipasang manual. PostgreSQL migration tetap manual.
+
+# 2. Prisma Client, persistent data initialization, and safety checks run automatically from pnpm install
 
 # 3. Start the agent (one terminal)
 pnpm dev:agent

@@ -15,7 +15,8 @@
     "storva:data:backup": "node scripts/backup-storva-data.mjs",
     "storva:data:check": "node scripts/check-storva-data.mjs",
     "storva:data:migrate-legacy": "node scripts/migrate-legacy-storva-db.mjs",
-    "storva:data:preupdate": "node scripts/preupdate-storva-data.mjs"
+    "storva:data:preupdate": "node scripts/preupdate-storva-data.mjs",
+    "postinstall": "node scripts/install-storva.mjs"
   },
   "devDependencies": {
     "turbo": "^2"

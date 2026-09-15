@@ -148,23 +148,6 @@ Keep `STORVA_DATA_DIR` explicitly configured when the web process runs under a s
 
 Tujuan: user lain cukup **klik-klik di browser** (tanpa `git clone`/`git push` manual) untuk punya instance Storva sendiri — **dan** bisa ikut update saat kalian merilis perubahan baru, juga tanpa command line.
 
----
-
-## Langkah 0 — Kalian tetap push SATU KALI (repo master)
-
-Ini tidak bisa dihilangkan — harus ada satu repo asli di GitHub sebagai sumbernya:
-
-```bash
-cd STORVA-v2-main
-git init
-git add .
-git commit -m "initial commit"
-git remote add origin https://github.com/<ORG-KALIAN>/<NAMA-REPO>.git
-git branch -M main
-git push -u origin main
-```
-
-Setelah ini, **kalian tidak perlu push manual lagi tiap ada user baru** — repo ini jadi sumber untuk semua orang. Tiap kali kalian mau merilis update, tinggal `git push` seperti biasa ke repo ini.
 
 ---
 
@@ -174,7 +157,7 @@ Setelah ini, **kalian tidak perlu push manual lagi tiap ada user baru** — repo
 
 Instruksikan ke user lain:
 
-1. Buka `https://github.com/<ORG-KALIAN>/<NAMA-REPO>`
+1. Buka `https://github.com/nuhastudio-ai/STORVA-v2`
 2. Klik tombol **Fork** (pojok kanan atas) → **Create fork**
 3. Repo tersalin ke akun GitHub mereka, dengan keterangan "forked from `<ORG-KALIAN>/<NAMA-REPO>`"
 

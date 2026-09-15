@@ -222,6 +222,19 @@ function FilesContent() {
   const [sortBy] = useState<'name' | 'size' | 'date'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
+  useEffect(() => {
+    if (!openMenuId) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest('[data-file-card-menu]')) {
+        setOpenMenuId(null)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [openMenuId])
+
   // Modals
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -799,7 +812,7 @@ function FilesContent() {
                       <div onClick={() => handleItemClick(item)} className="cursor-pointer">
                         {getItemIcon(item)}
                       </div>
-                      <div className="relative">
+                      <div className="relative" data-file-card-menu>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()

@@ -8,7 +8,6 @@ import { formatDate } from '@/lib/format-date'
 import {
   LayoutDashboard,
   FolderOpen,
-  Clock,
   Star,
   Trash2,
   HardDrive,
@@ -37,7 +36,6 @@ import {
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { label: 'My Files', icon: FolderOpen, path: '/files' },
-  { label: 'Recent', icon: Clock, path: '/recent' },
   { label: 'Favorites', icon: Star, path: '/favorites' },
   { label: 'Trash', icon: Trash2, path: '/trash' },
 ]

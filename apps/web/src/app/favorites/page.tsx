@@ -68,11 +68,9 @@ export default function FavoritesPage() {
     setLoading(true)
     setError(null)
     try {
-      // First try to fetch from /api/favorites, fallback to agent files if needed
-      const res = await fetch('/api/agent/files')
-      if (!res.ok) throw new Error('Failed to load drive items')
+      const res = await fetch('/api/favorites')
+      if (!res.ok) throw new Error('Failed to load favorites')
       const data = await res.json()
-      // Display items
       setItems(data.items || [])
     } catch (err: any) {
       setError(err.message || 'Error loading favorites')

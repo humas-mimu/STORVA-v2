@@ -12,7 +12,7 @@ import {
   List as ListIcon, ChevronRight, Download, Trash2, Edit2,
   FileText, Image as ImageIcon, Video, Music, Archive, File,
   X, Eye, RefreshCw, CheckCircle, AlertCircle, ArrowUpDown,
-  HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy, Plus, MoreVertical
+  HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy, Plus, MoreVertical, Star
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ type FileItem = {
   modifiedAt: string
   createdAt: string
   isPrivate?: boolean
+  isFavorite?: boolean
 }
 
 type Volume = {
@@ -282,6 +283,31 @@ function FilesContent() {
     setTimeout(() => setToast(null), 3500)
   }
 
+  const toggleFavorite = async (item: FileItem) => {
+    const isFavorite = !item.isFavorite
+    setItems((prev) => prev.map((i) => i.relativePath === item.relativePath ? { ...i, isFavorite } : i))
+    try {
+      const res = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          relativePath: item.relativePath,
+          name: item.name,
+          isFolder: item.isFolder,
+          size: item.size,
+          mimeType: item.mimeType,
+          extension: item.extension,
+          isFavorite,
+        }),
+      })
+      if (!res.ok) throw new Error('Gagal update favorite')
+      showToast(isFavorite ? 'Ditambahkan ke favorit' : 'Dihapus dari favorit')
+    } catch (err: any) {
+      setItems((prev) => prev.map((i) => i.relativePath === item.relativePath ? { ...i, isFavorite: !isFavorite } : i))
+      showToast(err.message, 'error')
+    }
+  }
+
   useEffect(() => {
     if (user?.role?.toLowerCase() !== 'admin') return
     fetch('/api/admin/users').then((r) => r.ok ? r.json() : null).then((data) => {
@@ -425,7 +451,10 @@ function FilesContent() {
         throw new Error(data.error || `Failed to load files (HTTP ${res.status})`)
       }
       const data = await res.json()
-      setItems(data.items || [])
+      const favsRes = await fetch('/api/favorites').catch(() => null)
+      const favsData = await favsRes?.json().catch(() => null)
+      const favPaths = new Set<string>((favsData?.items || []).map((f: any) => f.relativePath))
+      setItems((data.items || []).map((item: any) => ({ ...item, isFavorite: favPaths.has(item.relativePath) })))
     } catch (err: any) {
       setError(err.message || 'Unable to connect to Storage Drive')
     } finally {
@@ -814,6 +843,13 @@ function FilesContent() {
                       </div>
                       <div className="relative" data-file-card-menu>
                         <button
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(item) }}
+                          className={`rounded-lg p-1.5 transition-colors ${item.isFavorite ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-amber-500'}`}
+                          title={item.isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+                        >
+                          <Star size={16} fill={item.isFavorite ? 'currentColor' : 'none'} strokeWidth={2} />
+                        </button>
+                        <button
                           onClick={(e) => {
                             e.stopPropagation()
                             setOpenMenuId(openMenuId === (item.relativePath || item.name) ? null : (item.relativePath || item.name))
@@ -915,6 +951,13 @@ function FilesContent() {
                         <td className="py-3 text-xs text-slate-400">{formatDate(item.modifiedAt)}</td>
                         <td className="py-3 pr-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => toggleFavorite(item)}
+                              className={`rounded-lg p-1.5 transition-colors ${item.isFavorite ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-amber-500'}`}
+                              title={item.isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+                            >
+                              <Star size={15} fill={item.isFavorite ? 'currentColor' : 'none'} strokeWidth={2} />
+                            </button>
                             {!item.isFolder && (
                               <>
                                 <button onClick={() => setPreviewItem(item)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><Eye size={15} /></button>

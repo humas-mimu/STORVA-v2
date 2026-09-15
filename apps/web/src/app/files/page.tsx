@@ -12,7 +12,7 @@ import {
   List as ListIcon, ChevronRight, Download, Trash2, Edit2,
   FileText, Image as ImageIcon, Video, Music, Archive, File,
   X, Eye, RefreshCw, CheckCircle, AlertCircle, ArrowUpDown,
-  HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy, Plus
+  HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy, Plus, MoreVertical
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -218,6 +218,7 @@ function FilesContent() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [sortBy] = useState<'name' | 'size' | 'date'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
@@ -798,50 +799,63 @@ function FilesContent() {
                       <div onClick={() => handleItemClick(item)} className="cursor-pointer">
                         {getItemIcon(item)}
                       </div>
-                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                        {!item.isFolder && (
-                          <a
-                            href={addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)}
-                            download={item.name}
-                            title="Download"
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                          >
-                            <Download size={14} />
-                          </a>
-                        )}
-                        {user && (
-                          <button
-                            onClick={() => openShareModal(item)}
-                            title="Share link"
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                          >
-                            <Share2 size={14} />
-                          </button>
-                        )}
-                        {user?.role?.toLowerCase() === 'admin' && (
-                          <button
-                            onClick={() => openPrivacy(item)}
-                            title="Private access"
-                            className={`rounded-lg p-1.5 hover:bg-indigo-50 ${item.isPrivate ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
-                          >
-                            <Lock size={14} />
-                          </button>
-                        )}
-                        {user && (
-                          <button
-                            onClick={() => { setRenamingItem(item); setNewName(item.name) }}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                        )}
-                        {user && (
-                          <button
-                            onClick={() => setDeletingItem(item)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === (item.relativePath || item.name) ? null : (item.relativePath || item.name))
+                          }}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {openMenuId === (item.relativePath || item.name) && (
+                          <div className="absolute right-0 top-full z-20 mt-2 flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl">
+                            {!item.isFolder && (
+                              <a
+                                href={addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)}
+                                download={item.name}
+                                title="Download"
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              >
+                                <Download size={16} />
+                              </a>
+                            )}
+                            {user && (
+                              <button
+                                onClick={() => openShareModal(item)}
+                                title="Share link"
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              >
+                                <Share2 size={16} />
+                              </button>
+                            )}
+                            {user?.role?.toLowerCase() === 'admin' && (
+                              <button
+                                onClick={() => openPrivacy(item)}
+                                title="Private access"
+                                className={`rounded-lg p-1.5 hover:bg-indigo-50 ${item.isPrivate ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
+                              >
+                                <Lock size={16} />
+                              </button>
+                            )}
+                            {user && (
+                              <button
+                                onClick={() => { setRenamingItem(item); setNewName(item.name) }}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                            )}
+                            {user && (
+                              <button
+                                onClick={() => setDeletingItem(item)}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

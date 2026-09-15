@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Sidebar, RightPanel } from '@/components/dashboard'
 import {
   Star,
@@ -59,6 +60,7 @@ function getItemIcon(item: FileItem) {
 }
 
 export default function FavoritesPage() {
+  const router = useRouter()
   const [items, setItems] = useState<FileItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -160,7 +162,13 @@ export default function FavoritesPage() {
                       <tr key={item.relativePath || item.name} className="group hover:bg-slate-50/80 transition">
                         <td className="py-3 pl-3 font-medium text-slate-700">
                           <div
-                            onClick={() => !item.isFolder && setPreviewItem(item)}
+                            onClick={() => {
+                              if (item.isFolder) {
+                                router.push(`/files?path=${encodeURIComponent(item.relativePath)}`)
+                              } else {
+                                setPreviewItem(item)
+                              }
+                            }}
                             className="flex cursor-pointer items-center gap-3 group-hover:text-indigo-600"
                           >
                             {getItemIcon(item)}

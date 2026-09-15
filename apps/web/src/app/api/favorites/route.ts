@@ -15,18 +15,29 @@ async function getOrCreateDevice(userId: string) {
   })
 }
 
+function inferCategory(mime: string, isFolder: boolean) {
+  if (isFolder) return 'folder'
+  if (mime.startsWith('image/')) return 'images'
+  if (mime.startsWith('video/')) return 'videos'
+  if (mime.startsWith('audio/')) return 'audio'
+  if (mime.startsWith('text/') || mime.includes('pdf') || mime.includes('document') || mime.includes('sheet')) return 'documents'
+  return 'others'
+}
+
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser(req)
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
     const favorites = await repository.fileMetadata.findMany({
-      where: { userId: user.id, isFavorite: true, isDeleted: false },
+      where: { userId: user.id, isFavorite: true },
       orderBy: { updatedAt: 'desc' },
     })
 
     // BigInt serialization string conversion
-    const items = favorites.map((f: any) => ({ ...f, size: f.size.toString() }))
+    const items = favorites
+      .filter((f: any) => f.isDeleted !== true)
+      .map((f: any) => ({ ...f, size: f.size.toString(), category: inferCategory(f.mimeType || '', Boolean(f.isFolder)) }))
     return Response.json({ items })
   } catch (err: any) {
     return Response.json({ error: err.message }, { status: 500 })
@@ -40,9 +51,11 @@ export async function POST(req: Request) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
     if (!fileId && !relativePath) return Response.json({ error: 'fileId or relativePath required' }, { status: 400 })
 
+    const normPath = relativePath ? relativePath.replace(/\\/g, '/').replace(/^\/+/, '') : relativePath
+
     let file = fileId
       ? await repository.fileMetadata.findUnique({ where: { id: fileId } })
-      : await repository.fileMetadata.findFirst({ where: { userId: user.id, relativePath } })
+      : await repository.fileMetadata.findFirst({ where: { userId: user.id, relativePath: normPath } })
 
     if (file) {
       file = await repository.fileMetadata.update({
@@ -50,15 +63,17 @@ export async function POST(req: Request) {
         data: { isFavorite: Boolean(isFavorite) },
       })
     } else {
+      if (!normPath) return Response.json({ error: 'File metadata not found' }, { status: 404 })
       const device = await getOrCreateDevice(user.id)
       file = await repository.fileMetadata.create({
         data: {
           userId: user.id,
           deviceId: device.id,
-          name: name || relativePath.split('/').pop() || relativePath,
-          relativePath,
+          name: name || normPath.split('/').pop() || normPath,
+          relativePath: normPath,
           isFolder: Boolean(isFolder),
           isFavorite: Boolean(isFavorite),
+          isDeleted: false,
           size: BigInt(Number(size) || 0),
           mimeType: mimeType || 'application/octet-stream',
           extension: extension || '',

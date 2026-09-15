@@ -290,6 +290,7 @@ function FilesContent() {
       const res = await fetch('/api/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           relativePath: item.relativePath,
           name: item.name,
@@ -451,7 +452,7 @@ function FilesContent() {
         throw new Error(data.error || `Failed to load files (HTTP ${res.status})`)
       }
       const data = await res.json()
-      const favsRes = await fetch('/api/favorites').catch(() => null)
+      const favsRes = await fetch('/api/favorites', { credentials: 'include' }).catch(() => null)
       const favsData = await favsRes?.json().catch(() => null)
       const favPaths = new Set<string>((favsData?.items || []).map((f: any) => f.relativePath))
       setItems((data.items || []).map((item: any) => ({ ...item, isFavorite: favPaths.has(item.relativePath) })))

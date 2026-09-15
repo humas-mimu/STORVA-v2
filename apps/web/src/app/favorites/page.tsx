@@ -68,10 +68,16 @@ export default function FavoritesPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/favorites')
+      const res = await fetch('/api/favorites', { credentials: 'include' })
       if (!res.ok) throw new Error('Failed to load favorites')
       const data = await res.json()
-      setItems(data.items || [])
+      setItems((data.items || []).map((item: any) => ({
+        ...item,
+        size: Number(item.size) || 0,
+        category: item.category || 'others',
+        modifiedAt: item.modifiedAt || item.updatedAt || item.createdAt || new Date().toISOString(),
+        createdAt: item.createdAt || new Date().toISOString(),
+      })))
     } catch (err: any) {
       setError(err.message || 'Error loading favorites')
     } finally {

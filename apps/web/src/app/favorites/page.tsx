@@ -31,6 +31,7 @@ type FileItem = {
   modifiedAt: string
   createdAt: string
   isFavorite?: boolean
+  volumeId?: number | null
 }
 
 function formatBytes(bytes: number = 0) {
@@ -66,6 +67,37 @@ export default function FavoritesPage() {
   const [error, setError] = useState<string | null>(null)
   const [previewItem, setPreviewItem] = useState<FileItem | null>(null)
 
+  const openFolder = async (item: FileItem) => {
+    if (item.volumeId != null) {
+      router.push(`/files?vol=${item.volumeId}&path=${encodeURIComponent(item.relativePath)}`)
+      return
+    }
+
+    // Fallback for legacy favorites missing volumeId: probe accessible volumes
+    try {
+      const volRes = await fetch('/api/agent/volumes')
+      const volData = await volRes.json().catch(() => ({}))
+      const accessible = (volData.volumes || []).filter((v: any) => v.accessible)
+      for (const v of accessible) {
+        const checkRes = await fetch(`/api/agent/files?vol=${v.id}&path=${encodeURIComponent(item.relativePath)}`)
+        if (checkRes.ok) {
+          // Backfill volumeId asynchronously so future clicks are instant
+          fetch('/api/favorites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ relativePath: item.relativePath, volumeId: v.id, isFavorite: true }),
+          }).catch(() => {})
+          router.push(`/files?vol=${v.id}&path=${encodeURIComponent(item.relativePath)}`)
+          return
+        }
+      }
+    } catch {}
+
+    // Fallback to path only
+    router.push(`/files?path=${encodeURIComponent(item.relativePath)}`)
+  }
+
   const loadFavorites = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -75,6 +107,7 @@ export default function FavoritesPage() {
       const data = await res.json()
       setItems((data.items || []).map((item: any) => ({
         ...item,
+        volumeId: item.volumeId ?? null,
         size: Number(item.size) || 0,
         category: item.category || 'others',
         modifiedAt: item.modifiedAt || item.updatedAt || item.createdAt || new Date().toISOString(),
@@ -164,7 +197,7 @@ export default function FavoritesPage() {
                           <div
                             onClick={() => {
                               if (item.isFolder) {
-                                router.push(`/files?path=${encodeURIComponent(item.relativePath)}`)
+                                openFolder(item)
                               } else {
                                 setPreviewItem(item)
                               }

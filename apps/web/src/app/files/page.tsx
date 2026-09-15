@@ -29,6 +29,7 @@ type FileItem = {
   createdAt: string
   isPrivate?: boolean
   isFavorite?: boolean
+  volumeId?: number | null
 }
 
 type Volume = {
@@ -299,6 +300,7 @@ function FilesContent() {
           mimeType: item.mimeType,
           extension: item.extension,
           isFavorite,
+          volumeId: activeVol?.id,
         }),
       })
       if (!res.ok) throw new Error('Gagal update favorite')
@@ -454,8 +456,8 @@ function FilesContent() {
       const data = await res.json()
       const favsRes = await fetch('/api/favorites', { credentials: 'include' }).catch(() => null)
       const favsData = await favsRes?.json().catch(() => null)
-      const favPaths = new Set<string>((favsData?.items || []).map((f: any) => f.relativePath))
-      setItems((data.items || []).map((item: any) => ({ ...item, isFavorite: favPaths.has(item.relativePath) })))
+      const favKeys = new Set<string>((favsData?.items || []).map((f: any) => `${f.volumeId ?? ''}:${f.relativePath}`))
+      setItems((data.items || []).map((item: any) => ({ ...item, isFavorite: favKeys.has(`${activeVol.id}:${item.relativePath}`), volumeId: activeVol.id })))
     } catch (err: any) {
       setError(err.message || 'Unable to connect to Storage Drive')
     } finally {

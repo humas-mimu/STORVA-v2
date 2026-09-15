@@ -46,7 +46,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { fileId, relativePath, name, isFolder, size, mimeType, extension, isFavorite } = await req.json()
+    const { fileId, relativePath, name, isFolder, size, mimeType, extension, isFavorite, volumeId } = await req.json()
     const user = await getCurrentUser(req)
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
     if (!fileId && !relativePath) return Response.json({ error: 'fileId or relativePath required' }, { status: 400 })
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     if (file) {
       file = await repository.fileMetadata.update({
         where: { id: file.id },
-        data: { isFavorite: Boolean(isFavorite) },
+        data: { isFavorite: Boolean(isFavorite), volumeId: volumeId != null ? Number(volumeId) : file.volumeId ?? null },
       })
     } else {
       if (!normPath) return Response.json({ error: 'File metadata not found' }, { status: 404 })
@@ -74,6 +74,7 @@ export async function POST(req: Request) {
           isFolder: Boolean(isFolder),
           isFavorite: Boolean(isFavorite),
           isDeleted: false,
+          volumeId: volumeId != null ? Number(volumeId) : null,
           size: BigInt(Number(size) || 0),
           mimeType: mimeType || 'application/octet-stream',
           extension: extension || '',

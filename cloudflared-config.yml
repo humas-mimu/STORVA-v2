@@ -1,0 +1,15 @@
+# Template konfigurasi Cloudflare Tunnel untuk Storva Agent
+# Lokasi file ini biasanya: C:\Users\<user>\.cloudflared\config.yml (Windows)
+# atau ~/.cloudflared/config.yml (Linux/macOS)
+#
+# Ganti <TUNNEL_ID> dan <domain-kamu> sesuai hasil `cloudflared tunnel create storva-agent`
+
+tunnel: <TUNNEL_ID>
+credentials-file: C:\Users\<user>\.cloudflared\<TUNNEL_ID>.json
+
+ingress:
+  # Subdomain khusus untuk agent Storva, contoh: agent.storva-kamu.com
+  - hostname: agent.<domain-kamu>
+    service: http://127.0.0.1:5125
+  # Wajib ada aturan "catch-all" di baris terakhir
+  - service: http_status:404

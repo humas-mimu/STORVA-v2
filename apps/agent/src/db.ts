@@ -171,6 +171,26 @@ export const storageVolumes = {
     tx()
   },
 
+  /** Sync volumes with env on startup — insert new paths, update order,
+   *  and remove any volume whose path is no longer listed in env. */
+  sync(paths: string[]) {
+    const trimmed = paths.slice(0, MAX_VOLUMES)
+    const insert = db.prepare(`
+      INSERT INTO storage_volumes (label, storage_path, enabled, sort_order)
+      VALUES (?, ?, 1, ?)
+      ON CONFLICT(storage_path) DO UPDATE SET sort_order = excluded.sort_order
+    `)
+    const tx = db.transaction(() => {
+      trimmed.forEach((p, i) => {
+        const label = p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p
+        insert.run(label, p, i)
+      })
+      const placeholders = trimmed.map(() => '?').join(',')
+      db.prepare(`DELETE FROM storage_volumes WHERE storage_path NOT IN (${placeholders})`).run(...trimmed)
+    })
+    tx()
+  },
+
   list(): StorageVolume[] {
     return db.prepare(
       `SELECT * FROM storage_volumes ORDER BY sort_order ASC, id ASC`

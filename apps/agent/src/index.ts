@@ -156,7 +156,7 @@ async function ensureVolumeDir(vol: StorageVolume): Promise<string | null> {
 }
 
 async function initVolumes() {
-  storageVolumes.seed(parseStoragePaths())
+  storageVolumes.sync(parseStoragePaths())
   for (const vol of storageVolumes.list()) {
     if (!vol.enabled || !vol.storage_path) { volumeErrors.set(vol.id, null); continue }
     const err = await ensureVolumeDir(vol)

@@ -650,6 +650,16 @@ function FilesContent() {
     }))
   }
 
+  const resumeUploadFile = (id: string) => {
+    setUploadQueue((current) => current.map((item) => item.id === id ? {
+      ...item,
+      status: 'pending',
+      progress: 0,
+      bytesUploaded: 0,
+    } : item))
+    setIsUploading(true)
+  }
+
   const cancelUploadFile = (id: string) => {
     setUploadQueue((current) => current.map((item) => {
       if (item.id !== id) return item
@@ -1452,12 +1462,21 @@ function FilesContent() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-3 flex w-full items-center justify-end gap-2 sm:absolute sm:right-4 sm:top-4 sm:mt-0 sm:w-auto">
                       {item.status === 'uploading' && (
-                        <button onClick={() => pauseUploadFile(item.id)} className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg" title="Pause"><Pause size={14} /></button>
+                        <button onClick={() => pauseUploadFile(item.id)} className="flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 text-amber-600 hover:bg-amber-100" title="Pause">
+                          <Pause size={14} /> <span className="text-[11px] font-semibold">Pause</span>
+                        </button>
+                      )}
+                      {item.status === 'paused' && (
+                        <button onClick={() => resumeUploadFile(item.id)} className="flex min-h-9 items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 text-indigo-600 hover:bg-indigo-100" title="Resume">
+                          <RefreshCw size={14} /> <span className="text-[11px] font-semibold">Resume</span>
+                        </button>
                       )}
                       {(item.status === 'pending' || item.status === 'uploading' || item.status === 'paused' || item.status === 'failed') && (
-                        <button onClick={() => cancelUploadFile(item.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="Cancel"><XCircle size={14} /></button>
+                        <button onClick={() => cancelUploadFile(item.id)} className="flex min-h-9 items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 text-rose-600 hover:bg-rose-100" title="Cancel">
+                          <XCircle size={14} /> <span className="text-[11px] font-semibold">Cancel</span>
+                        </button>
                       )}
                     </div>
                   </div>

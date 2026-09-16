@@ -83,6 +83,61 @@ function getCategory(mime: string): string {
   return 'others'
 }
 
+type StorageDiskStats = {
+  totalBytes: number
+  freeBytes: number
+  usedBytes: number
+}
+
+function isVolumeRoot(storagePath: string): boolean {
+  const resolved = path.resolve(storagePath)
+  const parsedRoot = path.parse(resolved).root
+  return resolved === parsedRoot || resolved === parsedRoot.replace(/[\\/]$/, '')
+}
+
+async function getStorageUsage(dir: string, byCategory?: Record<string, number>): Promise<number> {
+  let total = 0
+  const entries = await fsp.readdir(dir, { withFileTypes: true }).catch(() => [])
+  for (const e of entries) {
+    if (e.name === '.trash' || e.name === '.staging' || e.name === '.DS_Store' || WINDOWS_SYSTEM_DIRS.has(e.name)) continue
+    const full = path.join(dir, e.name)
+    if (e.isDirectory()) {
+      total += await getStorageUsage(full, byCategory)
+    } else {
+      const st = await fsp.stat(full).catch(() => null)
+      if (st) {
+        total += st.size
+        if (byCategory) {
+          const cat = getCategory(getMimeType(e.name))
+          byCategory[cat] = (byCategory[cat] || 0) + st.size
+        }
+      }
+    }
+  }
+  return total
+}
+
+async function getStorageDiskStats(storagePath: string, byCategory?: Record<string, number>): Promise<StorageDiskStats | null> {
+  const fsStats = await withTimeout(fsp.statfs(storagePath), 2000).catch(() => null)
+  if (!fsStats) return null
+
+  const diskFreeBytes = fsStats.bsize * fsStats.bavail
+  if (isVolumeRoot(storagePath)) {
+    return {
+      totalBytes: fsStats.bsize * fsStats.blocks,
+      freeBytes: diskFreeBytes,
+      usedBytes: fsStats.bsize * (fsStats.blocks - fsStats.bavail),
+    }
+  }
+
+  const usedBytes = await withTimeout(getStorageUsage(storagePath, byCategory), 5000).catch(() => 0)
+  return {
+    totalBytes: usedBytes + diskFreeBytes,
+    freeBytes: diskFreeBytes,
+    usedBytes,
+  }
+}
+
 // ── Volume accessibility map ──────────────────────────────────────────────────
 const volumeErrors = new Map<number, string | null>()
 
@@ -150,14 +205,7 @@ app.get('/health', async (_req, res) => {
     const storedError = volumeErrors.get(vol.id)
     let disk: object | null = null
     if (vol.enabled && storedError === null) {
-      disk = await withTimeout(fsp.statfs(vol.storage_path), 2000).then((s) => ({
-        totalBytes: s.bsize * s.blocks,
-        freeBytes: s.bsize * s.bavail,
-        usedBytes: s.bsize * (s.blocks - s.bavail),
-      })).catch(() => null)
-      // Note: on timeout the underlying statfs syscall may still be in flight
-      // on the libuv threadpool — we just stop waiting on it here so /health
-      // stays responsive. That's fine for a status check.
+      disk = await getStorageDiskStats(vol.storage_path)
     }
     return {
       id: vol.id, label: vol.label, storagePath: vol.storage_path,
@@ -195,35 +243,15 @@ app.get('/storage/stats', async (req, res) => {
   const { vol, error } = resolveVolume(req.query.vol as string | undefined)
   if (!vol) return res.status(400).json({ error })
   try {
-    const fsStats = await withTimeout(fsp.statfs(vol.storage_path), 2000).catch(() => null)
-    const totalBytes = fsStats ? fsStats.bsize * fsStats.blocks : 0
-    const freeBytes = fsStats ? fsStats.bsize * fsStats.bavail : 0
-    const usedBytes = fsStats ? fsStats.bsize * (fsStats.blocks - fsStats.bavail) : 0
-    const percentUsed = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 10000) / 100 : 0
-
     const byCategory: Record<string, number> = {
       images: 0, videos: 0, audio: 0, archives: 0, documents: 0, others: 0
     }
 
-    const walk = async (dir: string) => {
-      const entries = await fsp.readdir(dir, { withFileTypes: true }).catch(() => [])
-      for (const e of entries) {
-        if (e.name === '.trash' || e.name === '.staging' || e.name === '.DS_Store' || WINDOWS_SYSTEM_DIRS.has(e.name)) continue
-        const full = path.join(dir, e.name)
-        if (e.isDirectory()) {
-          await walk(full)
-        } else {
-          const st = await fsp.stat(full).catch(() => null)
-          if (st) {
-            const cat = getCategory(getMimeType(e.name))
-            byCategory[cat] = (byCategory[cat] || 0) + st.size
-          }
-        }
-      }
-    }
-
-    // Fast walk (limit 5s)
-    await withTimeout(walk(vol.storage_path), 5000).catch(() => {})
+    const disk = await getStorageDiskStats(vol.storage_path, byCategory)
+    const totalBytes = disk?.totalBytes ?? 0
+    const freeBytes = disk?.freeBytes ?? 0
+    const usedBytes = disk?.usedBytes ?? 0
+    const percentUsed = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 10000) / 100 : 0
 
     res.json({
       status: 'online',

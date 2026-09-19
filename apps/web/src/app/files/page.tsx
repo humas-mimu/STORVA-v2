@@ -784,36 +784,32 @@ function FilesContent() {
   )
 
   const handleBulkDownload = async () => {
-    const files = selectedItems.filter((item) => !item.isFolder)
-    const skippedFolders = selectedItems.length - files.length
-
-    if (files.length === 0) {
-      showToast('No downloadable files in the selection', 'error')
-      setBulkAction(null)
-      return
-    }
+    if (selectedItems.length === 0) { setBulkAction(null); return }
 
     setIsBulkWorking(true)
     try {
-      // Trigger one download per file. Staggered slightly so the browser
-      // doesn't treat rapid-fire clicks as a popup burst and block them.
-      for (let i = 0; i < files.length; i++) {
-        const item = files[i]
-        const a = document.createElement('a')
-        a.href = addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)
-        a.download = item.name
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        if (i < files.length - 1) await new Promise((resolve) => setTimeout(resolve, 400))
-      }
-      showToast(
-        skippedFolders > 0
-          ? `Downloading ${files.length} file(s). ${skippedFolders} folder(s) were skipped.`
-          : `Downloading ${files.length} file(s)`
-      )
+      const res = await fetch(addVolParam('/api/agent/download/zip'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: selectedItems.map((item) => item.relativePath) }),
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to create archive')
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'Storva-Files.zip'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+      showToast(`Downloading Storva-Files.zip (${selectedItems.length} item${selectedItems.length !== 1 ? 's' : ''})`)
       setIsSelectMode(false)
       setSelectedPaths(new Set())
+    } catch (err: any) {
+      showToast(err.message || 'Failed to download selected items', 'error')
     } finally {
       setIsBulkWorking(false)
       setBulkAction(null)
@@ -1437,9 +1433,7 @@ function FilesContent() {
             <p className="mt-4 text-xs text-slate-500 leading-relaxed">
               {bulkAction === 'delete'
                 ? 'All selected files and folders will be moved to Trash. You can restore them later from Trash.'
-                : selectedItems.some((i) => i.isFolder)
-                  ? 'A download will start for each selected file. Folders in the selection cannot be downloaded and will be skipped.'
-                  : 'A download will start for each selected file.'}
+                : 'Selected files and folders will be bundled into a single archive: Storva-Files.zip.'}
             </p>
             <div className="mt-6 flex justify-end gap-2">
               <button

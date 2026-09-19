@@ -12,7 +12,6 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import multer from 'multer'
-import archiver from 'archiver'
 import sharp from 'sharp'
 import { resolveSafePath } from '@storva/validation'
 import { uploadSessions, syncQueue, storageVolumes, MAX_VOLUMES, type StorageVolume } from './db'
@@ -407,75 +406,7 @@ app.get('/download', authenticateToken('read'), async (req, res) => {
   } catch (err: any) { res.status(400).json({ error: err.message }) }
 })
 
-// 11b. Download multiple files/folders as a single .zip archive
-// Body: { paths: string[] } — relativePaths of the selected items (files and/or folders).
-app.post('/download/zip', authenticateToken('read'), async (req, res) => {
-  const { vol, error } = resolveVolume(req.query.vol as string | undefined)
-  if (!vol) return res.status(400).json({ error })
-  if (error) return res.status(503).json({ error })
-
-  const requestedPaths: string[] = Array.isArray(req.body?.paths) ? req.body.paths.filter((p: any) => typeof p === 'string' && p.trim()) : []
-  if (requestedPaths.length === 0) return res.status(400).json({ error: 'paths array required' })
-
-  // Resolve + stat everything up front so a bad path (missing, outside the
-  // volume, etc.) is reported as JSON before we ever start streaming the zip —
-  // once headers are sent we can no longer send a clean error response.
-  type ResolvedEntry = { safePath: string; entryName: string; isDirectory: boolean }
-  const resolved: ResolvedEntry[] = []
-  const usedNames = new Set<string>()
-
-  const uniqueName = (base: string) => {
-    let name = base
-    let i = 2
-    while (usedNames.has(name)) { name = `${base} (${i})`; i++ }
-    usedNames.add(name)
-    return name
-  }
-
-  try {
-    for (const relPath of requestedPaths) {
-      const safePath = resolveSafePath(vol.storage_path, relPath)
-      const stat = await fsp.stat(safePath)
-      const entryName = uniqueName(path.basename(safePath))
-      resolved.push({ safePath, entryName, isDirectory: stat.isDirectory() })
-    }
-  } catch (err: any) {
-    return res.status(400).json({ error: err.message })
-  }
-
-  if (resolved.length === 0) return res.status(400).json({ error: 'Nothing to download' })
-
-  res.writeHead(200, {
-    'Content-Type': 'application/zip',
-    'Content-Disposition': 'attachment; filename="Storva-Files.zip"',
-  })
-
-  const archive = archiver('zip', { zlib: { level: 9 } })
-  archive.on('warning', (err) => console.warn('[Storva Agent] zip warning:', err.message))
-  archive.on('error', (err) => {
-    console.error('[Storva Agent] zip error:', err.message)
-    if (!res.headersSent) res.status(500).end()
-    else res.end()
-  })
-  archive.pipe(res)
-
-  const IGNORED_ENTRIES = new Set(['.trash', '.staging', '.DS_Store', 'Thumbs.db', 'desktop.ini'])
-  for (const entry of resolved) {
-    if (entry.isDirectory) {
-      archive.directory(entry.safePath, entry.entryName, (data) => {
-        const base = path.basename(data.name)
-        if (IGNORED_ENTRIES.has(base) || WINDOWS_SYSTEM_DIRS.has(base)) return false
-        return data
-      })
-    } else {
-      archive.file(entry.safePath, { name: entry.entryName })
-    }
-  }
-
-  await archive.finalize()
-})
-
-
+// 12. Rename
 app.post('/rename', authenticateToken('write'), async (req, res) => {
   const { vol, error } = resolveVolume(req.query.vol as string | undefined)
   if (!vol) return res.status(400).json({ error })

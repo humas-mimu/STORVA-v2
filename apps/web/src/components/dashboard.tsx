@@ -207,7 +207,7 @@ export function Sidebar({ shareToken }: { shareToken?: string } = {}) {
 
         <div className="mt-8 rounded-3xl bg-white/10 p-5 ring-1 ring-white/20 backdrop-blur-sm">
           <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-200">Welcome!</p>
-          <p className="mt-1 text-lg font-bold leading-tight text-white">To HASANA Cloud.</p>
+          <p className="mt-1 text-lg font-bold leading-tight text-white">To MANBAUL ULUM Clouds.</p>
           <p className="mt-3 text-xs leading-relaxed text-indigo-100/70">
             Personal cloud, accessible anywhere. Manage files across your devices securely.
           </p>

@@ -412,20 +412,64 @@ function FilesContent() {
     // Load dimension asli
     const dataSource = await Promise.all(imageItems.map(async (img) => {
       const src = addVolParam(`/api/agent/preview?path=${encodeURIComponent(img.relativePath)}`)
+      const downloadSrc = addVolParam(`/api/agent/download?path=${encodeURIComponent(img.relativePath)}`)
       const dim = await new Promise<{ w: number, h: number }>((resolve) => {
         const i = new Image()
         i.onload = () => resolve({ w: i.naturalWidth, h: i.naturalHeight })
         i.onerror = () => resolve({ w: 1600, h: 1200 }) // fallback
         i.src = src
       })
-      return { src, w: dim.w, h: dim.h, alt: img.name }
+      return { src, w: dim.w, h: dim.h, alt: img.name, downloadSrc, filename: img.name }
     }))
 
     const lightbox = new PhotoSwipeLightbox({
       dataSource,
       pswpModule: () => import('photoswipe'),
+      // Slide area padding (px) — beri jarak dari atas & bawah viewport
+      padding: { top: 30, bottom: 30, left: 0, right: 0 },
     })
 
+    // Tombol download — mengikuti template resmi PhotoSwipe:
+    // https://photoswipe.com/adding-ui-elements/
+    lightbox.on('uiRegister', () => {
+      lightbox.pswp!.ui!.registerElement({
+        name: 'download-button',
+        order: 8,
+        isButton: true,
+        tagName: 'a',
+        html: {
+          isCustomSVG: true,
+          inner: '<path d="M20.5 14.3 17.1 18V10h-2.2v7.9l-3.4-3.6L10 16l6 6.1 6-6.1-1.5-1.6z" id="pswp__icn-download"/>',
+          outlineID: 'pswp__icn-download',
+        },
+        onInit: (el, pswp) => {
+          el.setAttribute('target', '_blank')
+          el.setAttribute('rel', 'noopener')
+
+          pswp.on('change', () => {
+            const anchor = el as HTMLAnchorElement
+            anchor.href = (pswp.currSlide?.data as any)?.downloadSrc || pswp.currSlide?.data.src || ''
+            anchor.download = (pswp.currSlide?.data as any)?.filename || ''
+          })
+        },
+      })
+
+      // Caption berisi nama file — mengikuti template resmi PhotoSwipe:
+      // https://photoswipe.com/caption/
+      lightbox.pswp!.ui!.registerElement({
+        name: 'custom-caption',
+        order: 9,
+        isButton: false,
+        appendTo: 'root',
+        html: '',
+        onInit: (el, pswp) => {
+          el.className = 'pswp__custom-caption'
+          pswp.on('change', () => {
+            el.textContent = (pswp.currSlide?.data as any)?.filename || pswp.currSlide?.data.alt || ''
+          })
+        },
+      })
+    })
 
     lightbox.init()
     lightbox.loadAndOpen(startIndex >= 0 ? startIndex : 0)

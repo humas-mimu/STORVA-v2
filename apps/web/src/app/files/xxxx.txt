@@ -13,7 +13,7 @@ import {
   FileText, Image as ImageIcon, Video, Music, Archive, File,
   X, Eye, RefreshCw, CheckCircle, AlertCircle, ArrowUpDown,
   HardDrive, ChevronDown, ArrowLeft, Lock, Unlock, Share2, Copy, Plus, MoreVertical, Star,
-  Pause, XCircle, CheckSquare, Check
+  Pause, XCircle
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -255,31 +255,6 @@ function FilesContent() {
   const [newName, setNewName] = useState('')
   const [deletingItem, setDeletingItem] = useState<FileItem | null>(null)
   const [previewItem, setPreviewItem] = useState<FileItem | null>(null)
-
-  // ── Bulk select ────────────────────────────────────────────────────────────
-  const [isSelectMode, setIsSelectMode] = useState(false)
-  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
-  const [bulkAction, setBulkAction] = useState<'download' | 'delete' | null>(null)
-  const [isBulkWorking, setIsBulkWorking] = useState(false)
-
-  const getItemKey = (item: FileItem) => item.relativePath || item.name
-
-  const toggleSelectMode = () => {
-    setIsSelectMode((prev) => {
-      if (prev) setSelectedPaths(new Set()) // leaving select mode clears selection
-      return !prev
-    })
-  }
-
-  const toggleItemSelected = (item: FileItem) => {
-    const key = getItemKey(item)
-    setSelectedPaths((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
 
   // Privacy
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
@@ -556,12 +531,6 @@ function FilesContent() {
 
   useEffect(() => { loadFiles() }, [loadFiles])
 
-  // Leaving the current folder/volume invalidates any selection made in it
-  useEffect(() => {
-    setIsSelectMode(false)
-    setSelectedPaths(new Set())
-  }, [currentPath, activeVol?.id])
-
   // ── Navigation ─────────────────────────────────────────────────────────────
   const navigateToFolder = (folderRelativePath: string) => {
     const params = new URLSearchParams()
@@ -777,78 +746,6 @@ function FilesContent() {
       return sortOrder === 'asc' ? cmp : -cmp
     })
 
-  // ── Bulk actions ─────────────────────────────────────────────────────────────
-  const selectedItems = useMemo(
-    () => filteredItems.filter((item) => selectedPaths.has(getItemKey(item))),
-    [filteredItems, selectedPaths]
-  )
-
-  const handleBulkDownload = async () => {
-    const files = selectedItems.filter((item) => !item.isFolder)
-    const skippedFolders = selectedItems.length - files.length
-
-    if (files.length === 0) {
-      showToast('No downloadable files in the selection', 'error')
-      setBulkAction(null)
-      return
-    }
-
-    setIsBulkWorking(true)
-    try {
-      // Trigger one download per file. Staggered slightly so the browser
-      // doesn't treat rapid-fire clicks as a popup burst and block them.
-      for (let i = 0; i < files.length; i++) {
-        const item = files[i]
-        const a = document.createElement('a')
-        a.href = addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)
-        a.download = item.name
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        if (i < files.length - 1) await new Promise((resolve) => setTimeout(resolve, 400))
-      }
-      showToast(
-        skippedFolders > 0
-          ? `Downloading ${files.length} file(s). ${skippedFolders} folder(s) were skipped.`
-          : `Downloading ${files.length} file(s)`
-      )
-      setIsSelectMode(false)
-      setSelectedPaths(new Set())
-    } finally {
-      setIsBulkWorking(false)
-      setBulkAction(null)
-    }
-  }
-
-  const handleBulkDelete = async () => {
-    if (selectedItems.length === 0) { setBulkAction(null); return }
-    setIsBulkWorking(true)
-    let failed = 0
-    try {
-      for (const item of selectedItems) {
-        try {
-          const res = await fetch(addVolParam('/api/agent/delete'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filePath: item.relativePath }),
-          })
-          if (!res.ok) failed++
-        } catch {
-          failed++
-        }
-      }
-      const succeeded = selectedItems.length - failed
-      if (succeeded > 0) showToast(`${succeeded} item(s) moved to Trash${failed ? `, ${failed} failed` : ''}`, failed ? 'error' : 'success')
-      else showToast('Failed to delete selected items', 'error')
-      setIsSelectMode(false)
-      setSelectedPaths(new Set())
-      loadFiles()
-    } finally {
-      setIsBulkWorking(false)
-      setBulkAction(null)
-    }
-  }
-
   // ── Drag & Drop ────────────────────────────────────────────────────────────
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }
   const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false) }
@@ -963,37 +860,6 @@ function FilesContent() {
                     className="w-full rounded-xl bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-                <button
-                  onClick={toggleSelectMode}
-                  title={isSelectMode ? 'Exit select mode' : 'Select items'}
-                  className={`flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${isSelectMode
-                    ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
-                    : 'bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'
-                    }`}
-                >
-                  <CheckSquare size={14} />
-                  <span className="hidden sm:inline">{isSelectMode ? 'Cancel' : 'Select'}</span>
-                </button>
-                {isSelectMode && selectedItems.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => setBulkAction('download')}
-                      title="Download selected"
-                      className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-slate-50 px-3 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
-                    >
-                      <Download size={14} />
-                      <span className="hidden sm:inline">{selectedItems.length}</span>
-                    </button>
-                    <button
-                      onClick={() => setBulkAction('delete')}
-                      title="Delete selected"
-                      className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-rose-50 px-3 text-xs font-semibold text-rose-600 ring-1 ring-rose-100 hover:bg-rose-100"
-                    >
-                      <Trash2 size={14} />
-                      <span className="hidden sm:inline">{selectedItems.length}</span>
-                    </button>
-                  </>
-                )}
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   title="Change sort order"
@@ -1136,123 +1002,102 @@ function FilesContent() {
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {filteredItems.map((item) => {
-                  const key = getItemKey(item)
-                  const isSelected = selectedPaths.has(key)
-                  return (
-                    <div
-                      key={key}
-                      onClick={() => { if (isSelectMode) toggleItemSelected(item) }}
-                      onDoubleClick={() => { if (!isSelectMode) handleItemClick(item) }}
-                      className={`group relative flex flex-col justify-between rounded-[1.25rem] border p-4 transition-all hover:shadow-md ${isSelected
-                        ? 'border-indigo-400 bg-indigo-50/60 ring-2 ring-indigo-400'
-                        : 'border-slate-100 bg-slate-50/50 hover:border-indigo-200 hover:bg-white'
-                        } ${isSelectMode ? 'cursor-pointer' : ''}`}
-                    >
-                      {isSelectMode && (
-                        <div
-                          className={`absolute right-3 top-3 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${isSelected
-                            ? 'border-indigo-600 bg-indigo-600 text-white'
-                            : 'border-slate-300 bg-white/80'
-                            }`}
+                {filteredItems.map((item) => (
+                  <div
+                    key={item.relativePath || item.name}
+                    onDoubleClick={() => handleItemClick(item)}
+                    className="group relative flex flex-col justify-between rounded-[1.25rem] border border-slate-100 bg-slate-50/50 p-4 transition-all hover:border-indigo-200 hover:bg-white hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div onClick={() => handleItemClick(item)} className="cursor-pointer">
+                        {getItemIcon(item)}
+                      </div>
+                      <div className="relative" data-file-card-menu>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(item) }}
+                          className={`rounded-lg p-1.5 transition-colors ${item.isFavorite ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-amber-500'}`}
+                          title={item.isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
                         >
-                          {isSelected && <Check size={12} strokeWidth={3} />}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div onClick={(e) => { if (isSelectMode) { e.stopPropagation(); toggleItemSelected(item) } else { handleItemClick(item) } }} className="cursor-pointer">
-                          {getItemIcon(item)}
-                        </div>
-                        {!isSelectMode && (
-                          <div className="relative" data-file-card-menu>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleFavorite(item) }}
-                              className={`rounded-lg p-1.5 transition-colors ${item.isFavorite ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-amber-500'}`}
-                              title={item.isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
-                            >
-                              <Star size={16} fill={item.isFavorite ? 'currentColor' : 'none'} strokeWidth={2} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setOpenMenuId(openMenuId === key ? null : key)
-                              }}
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-                            {openMenuId === key && (
-                              <div className="absolute right-0 top-full z-20 mt-2 flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl">
-                                {!item.isFolder && (
-                                  <a
-                                    href={addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)}
-                                    download={item.name}
-                                    title="Download"
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                                  >
-                                    <Download size={16} />
-                                  </a>
-                                )}
-                                {user && (
-                                  <button
-                                    onClick={() => openShareModal(item)}
-                                    title="Share link"
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                                  >
-                                    <Share2 size={16} />
-                                  </button>
-                                )}
-                                {user?.role?.toLowerCase() === 'admin' && (
-                                  <button
-                                    onClick={() => openPrivacy(item)}
-                                    title="Private access"
-                                    className={`rounded-lg p-1.5 hover:bg-indigo-50 ${item.isPrivate ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
-                                  >
-                                    <Lock size={16} />
-                                  </button>
-                                )}
-                                {user && (
-                                  <button
-                                    onClick={() => { setRenamingItem(item); setNewName(item.name) }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                                  >
-                                    <Edit2 size={16} />
-                                  </button>
-                                )}
-                                {user && (
-                                  <button
-                                    onClick={() => setDeletingItem(item)}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                )}
-                              </div>
+                          <Star size={16} fill={item.isFavorite ? 'currentColor' : 'none'} strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === (item.relativePath || item.name) ? null : (item.relativePath || item.name))
+                          }}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {openMenuId === (item.relativePath || item.name) && (
+                          <div className="absolute right-0 top-full z-20 mt-2 flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl">
+                            {!item.isFolder && (
+                              <a
+                                href={addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)}
+                                download={item.name}
+                                title="Download"
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              >
+                                <Download size={16} />
+                              </a>
+                            )}
+                            {user && (
+                              <button
+                                onClick={() => openShareModal(item)}
+                                title="Share link"
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              >
+                                <Share2 size={16} />
+                              </button>
+                            )}
+                            {user?.role?.toLowerCase() === 'admin' && (
+                              <button
+                                onClick={() => openPrivacy(item)}
+                                title="Private access"
+                                className={`rounded-lg p-1.5 hover:bg-indigo-50 ${item.isPrivate ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
+                              >
+                                <Lock size={16} />
+                              </button>
+                            )}
+                            {user && (
+                              <button
+                                onClick={() => { setRenamingItem(item); setNewName(item.name) }}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                            )}
+                            {user && (
+                              <button
+                                onClick={() => setDeletingItem(item)}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             )}
                           </div>
                         )}
                       </div>
-                      <div
-                        onClick={(e) => { if (isSelectMode) { e.stopPropagation(); toggleItemSelected(item) } else { handleItemClick(item) } }}
-                        className="mt-3 cursor-pointer"
-                      >
-                        <p title={item.name} className="truncate text-sm font-semibold text-slate-800 group-hover:text-indigo-600">
-                          {item.name}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-400">
-                          {item.isFolder ? 'Folder' : formatBytes(item.size)} • {formatDate(item.modifiedAt)}
-                        </p>
-                      </div>
                     </div>
-                  )
-                })}
+                    <div
+                      onClick={() => handleItemClick(item)}
+                      className="mt-3 cursor-pointer"
+                    >
+                      <p title={item.name} className="truncate text-sm font-semibold text-slate-800 group-hover:text-indigo-600">
+                        {item.name}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {item.isFolder ? 'Folder' : formatBytes(item.size)} • {formatDate(item.modifiedAt)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-slate-100 text-xs font-semibold text-slate-400">
                     <tr>
-                      {isSelectMode && <th className="w-8 pb-3 pl-3" />}
                       <th className="pb-3 pl-3">Name</th>
                       <th className="pb-3">Size</th>
                       <th className="pb-3">Category</th>
@@ -1261,83 +1106,61 @@ function FilesContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredItems.map((item) => {
-                      const key = getItemKey(item)
-                      const isSelected = selectedPaths.has(key)
-                      return (
-                        <tr
-                          key={key}
-                          onClick={() => { if (isSelectMode) toggleItemSelected(item) }}
-                          className={`group transition ${isSelected ? 'bg-indigo-50/70' : 'hover:bg-slate-50/80'} ${isSelectMode ? 'cursor-pointer' : ''}`}
-                        >
-                          {isSelectMode && (
-                            <td className="py-3 pl-3">
-                              <div
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${isSelected
-                                  ? 'border-indigo-600 bg-indigo-600 text-white'
-                                  : 'border-slate-300 bg-white'
-                                  }`}
-                              >
-                                {isSelected && <Check size={12} strokeWidth={3} />}
-                              </div>
-                            </td>
-                          )}
-                          <td className="py-3 pl-3">
-                            <div
-                              onClick={(e) => { if (isSelectMode) { e.stopPropagation(); toggleItemSelected(item) } else { handleItemClick(item) } }}
-                              className="flex cursor-pointer items-center gap-3 font-medium text-slate-700 group-hover:text-indigo-600"
+                    {filteredItems.map((item) => (
+                      <tr key={item.relativePath || item.name} className="group transition hover:bg-slate-50/80">
+                        <td className="py-3 pl-3">
+                          <div
+                            onClick={() => handleItemClick(item)}
+                            className="flex cursor-pointer items-center gap-3 font-medium text-slate-700 group-hover:text-indigo-600"
+                          >
+                            {getItemIcon(item, 20)}
+                            <span className="truncate max-w-xs md:max-w-sm">{item.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-xs text-slate-500">{item.isFolder ? '-' : formatBytes(item.size)}</td>
+                        <td className="py-3 text-xs capitalize text-slate-500">{item.category}</td>
+                        <td className="py-3 text-xs text-slate-400">{formatDate(item.modifiedAt)}</td>
+                        <td className="py-3 pr-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => toggleFavorite(item)}
+                              className={`rounded-lg p-1.5 transition-colors ${item.isFavorite ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-amber-500'}`}
+                              title={item.isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
                             >
-                              {getItemIcon(item, 20)}
-                              <span className="truncate max-w-xs md:max-w-sm">{item.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 text-xs text-slate-500">{item.isFolder ? '-' : formatBytes(item.size)}</td>
-                          <td className="py-3 text-xs capitalize text-slate-500">{item.category}</td>
-                          <td className="py-3 text-xs text-slate-400">{formatDate(item.modifiedAt)}</td>
-                          <td className="py-3 pr-3 text-right">
-                            {!isSelectMode && (
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  onClick={() => toggleFavorite(item)}
-                                  className={`rounded-lg p-1.5 transition-colors ${item.isFavorite ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-amber-500'}`}
-                                  title={item.isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+                              <Star size={15} fill={item.isFavorite ? 'currentColor' : 'none'} strokeWidth={2} />
+                            </button>
+                            {!item.isFolder && (
+                              <>
+                                <button onClick={() => setPreviewItem(item)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><Eye size={15} /></button>
+                                <a
+                                  href={addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)}
+                                  download={item.name}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
                                 >
-                                  <Star size={15} fill={item.isFavorite ? 'currentColor' : 'none'} strokeWidth={2} />
-                                </button>
-                                {!item.isFolder && (
-                                  <>
-                                    <button onClick={() => setPreviewItem(item)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><Eye size={15} /></button>
-                                    <a
-                                      href={addVolParam(`/api/agent/download?path=${encodeURIComponent(item.relativePath)}`)}
-                                      download={item.name}
-                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                                    >
-                                      <Download size={15} />
-                                    </a>
-                                  </>
-                                )}
-                                {user && (
-                                  <button onClick={() => openShareModal(item)} title="Share link" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
-                                    <Share2 size={15} />
-                                  </button>
-                                )}
-                                {user?.role?.toLowerCase() === 'admin' && (
-                                  <button onClick={() => openPrivacy(item)} title="Private access" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
-                                    <Lock size={15} />
-                                  </button>
-                                )}
-                                {user && (
-                                  <button onClick={() => { setRenamingItem(item); setNewName(item.name) }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><Edit2 size={15} /></button>
-                                )}
-                                {user && (
-                                  <button onClick={() => setDeletingItem(item)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>
-                                )}
-                              </div>
+                                  <Download size={15} />
+                                </a>
+                              </>
                             )}
-                          </td>
-                        </tr>
-                      )
-                    })}
+                            {user && (
+                              <button onClick={() => openShareModal(item)} title="Share link" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
+                                <Share2 size={15} />
+                              </button>
+                            )}
+                            {user?.role?.toLowerCase() === 'admin' && (
+                              <button onClick={() => openPrivacy(item)} title="Private access" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
+                                <Lock size={15} />
+                              </button>
+                            )}
+                            {user && (
+                              <button onClick={() => { setRenamingItem(item); setNewName(item.name) }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"><Edit2 size={15} /></button>
+                            )}
+                            {user && (
+                              <button onClick={() => setDeletingItem(item)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -1413,55 +1236,6 @@ function FilesContent() {
           </div>
         </div>
       )}
-
-      {/* BULK ACTION CONFIRM MODAL (download / delete selected) */}
-      {bulkAction && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
-          onMouseDown={(e) => { if (e.target === e.currentTarget && !isBulkWorking) setBulkAction(null) }}
-        >
-          <div onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${bulkAction === 'delete' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                {bulkAction === 'delete' ? <Trash2 size={24} /> : <Download size={24} />}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">
-                  {bulkAction === 'delete' ? 'Move selected items to Trash?' : 'Download selected items?'}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  <span className="font-semibold text-slate-700">{selectedItems.length}</span> item{selectedItems.length !== 1 ? 's' : ''} selected
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-              {bulkAction === 'delete'
-                ? 'All selected files and folders will be moved to Trash. You can restore them later from Trash.'
-                : selectedItems.some((i) => i.isFolder)
-                  ? 'A download will start for each selected file. Folders in the selection cannot be downloaded and will be skipped.'
-                  : 'A download will start for each selected file.'}
-            </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={() => setBulkAction(null)}
-                disabled={isBulkWorking}
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-              >
-                No
-              </button>
-              <button
-                onClick={bulkAction === 'delete' ? handleBulkDelete : handleBulkDownload}
-                disabled={isBulkWorking}
-                className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60 ${bulkAction === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'
-                  }`}
-              >
-                {isBulkWorking ? 'Please wait…' : 'Yes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
 
       {/* SHARE MODAL */}
       {isShareModalOpen && shareItem && (

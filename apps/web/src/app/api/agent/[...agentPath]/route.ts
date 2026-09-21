@@ -58,14 +58,18 @@ function getAllScopes(): Array<'storage:read' | 'storage:write' | 'storage:delet
   return ['storage:read', 'storage:write', 'storage:delete', 'storage:share']
 }
 
-type Props = { params: Promise<{ path: string[] }> }
+// NOTE: the catch-all segment must NOT be called "path": on Vercel, Next.js strips
+// any query parameter whose name equals a dynamic route param ("?path=..." would vanish).
+type Props = { params: Promise<{ agentPath: string[] }> }
 
-export async function GET(req: NextRequest, props: Props)    { return proxy(req, await props.params) }
-export async function POST(req: NextRequest, props: Props)   { return proxy(req, await props.params) }
-export async function PUT(req: NextRequest, props: Props)    { return proxy(req, await props.params) }
-export async function PATCH(req: NextRequest, props: Props)  { return proxy(req, await props.params) }
-export async function DELETE(req: NextRequest, props: Props) { return proxy(req, await props.params) }
-export async function HEAD(req: NextRequest, props: Props)   { return proxy(req, await props.params) }
+const segs = async (props: Props) => ({ path: (await props.params).agentPath })
+
+export async function GET(req: NextRequest, props: Props)    { return proxy(req, await segs(props)) }
+export async function POST(req: NextRequest, props: Props)   { return proxy(req, await segs(props)) }
+export async function PUT(req: NextRequest, props: Props)    { return proxy(req, await segs(props)) }
+export async function PATCH(req: NextRequest, props: Props)  { return proxy(req, await segs(props)) }
+export async function DELETE(req: NextRequest, props: Props) { return proxy(req, await segs(props)) }
+export async function HEAD(req: NextRequest, props: Props)   { return proxy(req, await segs(props)) }
 
 async function proxy(req: NextRequest, params: { path: string[] }) {
   try {

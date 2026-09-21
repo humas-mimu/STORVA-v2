@@ -93,6 +93,27 @@ async function proxy(req: NextRequest, params: { path: string[] }) {
       if (ab.byteLength > 0) bodyData = Buffer.from(ab)
     }
 
+    // ── Bulk zip: apply privacy rules before the agent builds the archive ────
+    if (req.method === 'POST' && params.path[0] === 'download' && params.path[1] === 'zip') {
+      const uid = currentUser?.id ?? null
+      const { isAdmin, rules } = await getPrivacyDecisions(uid)
+      let requested: string[] = []
+      try {
+        const parsed = JSON.parse(bodyData ? (bodyData as Buffer).toString('utf8') : '{}')
+        if (Array.isArray(parsed?.paths)) requested = parsed.paths.filter((p: unknown): p is string => typeof p === 'string')
+      } catch { /* invalid JSON — the agent answers 400 */ }
+
+      if (requested.some((p) => isPathHidden(p, uid, isAdmin, rules))) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      }
+      // Private folders nested inside a selected folder must be left out as well.
+      // Whatever the browser sent as excludePaths is discarded — only this list is trusted.
+      const excludePaths = rules
+        .filter((r) => isPathHidden(r.relativePath, uid, isAdmin, rules))
+        .map((r) => normalizePath(r.relativePath))
+      bodyData = Buffer.from(JSON.stringify({ paths: requested, excludePaths }))
+    }
+
     // ── Per-request timeout — prevents the proxy hanging forever ─────────────
     const timeoutMs = getTimeout(params.path)
     const controller = new AbortController()

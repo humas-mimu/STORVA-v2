@@ -24,3 +24,13 @@ Storva Agent v0.1.0 (stable)
 [Reconciler:CLOUDS-MIMU] FILE_MODIFIED → UMUM\DOKUMENTASI\2026\KK INARA .jpeg
 [Reconciler:CLOUDS-MIMU] FILE_DELETED → UMUM\DOKUMENTASI\2026\KK INARA .jpeg
 [Reconciler Process] Received SIGINT, shutting down...
+[Storva Agent] Volume #7 "CLOUDS-MIMU" → J:\CLOUDS-MIMU ✓
+Storva Agent v0.1.0 (stable)
+  Port   : 5125
+  Volumes: 1/1 accessible
+    [7] CLOUDS-MIMU  →  J:\CLOUDS-MIMU  ✓
+[Reconciler Process] pid=12436 — watching 1 volume(s):
+  → J:\CLOUDS-MIMU
+[Reconciler] Watching: J:\CLOUDS-MIMU
+[Storva Agent] Reconciler process ready (pid 12436)
+[Reconciler:CLOUDS-MIMU] Ready — watching for changes

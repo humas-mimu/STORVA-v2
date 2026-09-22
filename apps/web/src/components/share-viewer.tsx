@@ -290,7 +290,7 @@ export function ShareViewer({ share }: { share: any }) {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#eef2ff,_transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-0 text-slate-700 md:p-6">
-      <div className="mx-auto flex min-h-screen overflow-hidden border border-white/70 bg-white/70 shadow-[0_20px_80px_rgba(99,102,241,0.12)] backdrop-blur-xl md:grid md:h-[calc(100vh-3rem)] md:min-h-[760px] md:grid-cols-[240px_minmax(0,1fr)_320px] md:gap-6 md:rounded-[2rem] md:p-5">
+      <div className="mx-auto flex flex-col min-h-screen overflow-hidden border border-white/70 bg-white/70 shadow-[0_20px_80px_rgba(99,102,241,0.12)] backdrop-blur-xl md:grid md:h-[calc(100vh-3rem)] md:min-h-[760px] md:grid-cols-[240px_minmax(0,1fr)_320px] md:gap-6 md:rounded-[2rem] md:p-5">
         <Sidebar shareToken={isGuest ? share.token : undefined} />
         <section className="min-w-0 overflow-y-auto p-4 md:p-0 md:pr-1">
           <div className="mb-5 flex items-center justify-between gap-3">

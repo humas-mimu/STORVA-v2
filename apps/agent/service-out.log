@@ -1,0 +1,26 @@
+[Storva Agent] Volume #7 "CLOUDS-MIMU" → J:\CLOUDS-MIMU ✓
+Storva Agent v0.1.0 (stable)
+  Port   : 5125
+  Volumes: 1/1 accessible
+    [7] CLOUDS-MIMU  →  J:\CLOUDS-MIMU  ✓
+[Reconciler Process] pid=4240 — watching 1 volume(s):
+  → J:\CLOUDS-MIMU
+[Reconciler] Watching: J:\CLOUDS-MIMU
+[Storva Agent] Reconciler process ready (pid 4240)
+[Reconciler:CLOUDS-MIMU] Ready — watching for changes
+[Reconciler:CLOUDS-MIMU] FILE_DELETED → UMUM\WhatsApp Image 2026-09-21 at 09.26.39.jpeg
+[Reconciler:CLOUDS-MIMU] FILE_DELETED → UMUM\WhatsApp Image 2026-09-21 at 09.26.36.jpeg
+[Reconciler:CLOUDS-MIMU] FILE_DELETED → UMUM\WhatsApp Image 2026-09-21 at 09.26.40.jpeg
+[Reconciler:CLOUDS-MIMU] DIR_CREATED → UMUM\New folder
+[Reconciler:CLOUDS-MIMU] DIR_DELETED → UMUM\New folder
+[Reconciler:CLOUDS-MIMU] DIR_CREATED → UMUM\DOKUMENTASI
+[Reconciler:CLOUDS-MIMU] DIR_CREATED → UMUM\DOKUMENTASI\New folder
+[Reconciler:CLOUDS-MIMU] DIR_DELETED → UMUM\DOKUMENTASI\New folder
+[Reconciler:CLOUDS-MIMU] DIR_CREATED → UMUM\DOKUMENTASI\2025
+[Reconciler:CLOUDS-MIMU] DIR_CREATED → UMUM\DOKUMENTASI\New folder
+[Reconciler:CLOUDS-MIMU] DIR_DELETED → UMUM\DOKUMENTASI\New folder
+[Reconciler:CLOUDS-MIMU] DIR_CREATED → UMUM\DOKUMENTASI\2026
+[Reconciler:CLOUDS-MIMU] FILE_CREATED → UMUM\DOKUMENTASI\2026\KK INARA .jpeg
+[Reconciler:CLOUDS-MIMU] FILE_MODIFIED → UMUM\DOKUMENTASI\2026\KK INARA .jpeg
+[Reconciler:CLOUDS-MIMU] FILE_DELETED → UMUM\DOKUMENTASI\2026\KK INARA .jpeg
+[Reconciler Process] Received SIGINT, shutting down...

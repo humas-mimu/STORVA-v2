@@ -20,6 +20,45 @@ import { prepareZipEntries, streamZip, type ZipEntry } from './zip'
 import { AGENT_CHANNEL, AGENT_VERSION, getAgentVersionInfo } from './version'
 
 const app = express()
+
+// ── CORS — only for the browser talking to this agent directly ─────────────
+// Every normal request from the web app already goes through the Next.js
+// proxy on the same origin, so it never needs CORS. The one exception is
+// direct upload: Vercel hard-caps a serverless function's request body at
+// 4.5 MB, so large files (video, etc.) are sent from the browser straight to
+// this agent instead of through the proxy — and *that* request is
+// cross-origin, so the browser will only allow it if this agent explicitly
+// says yes via these headers, and will send a pre-flight OPTIONS request
+// first that must succeed without any auth (the real Authorization header
+// only shows up on the actual POST that follows).
+//
+// STORVA_ALLOWED_ORIGINS: comma-separated list of exact origins allowed to
+// call this agent directly, e.g.:
+//   STORVA_ALLOWED_ORIGINS=https://clouds-mu.vercel.app,http://localhost:8787
+// No wildcard — an empty/unset value means no browser origin is allowed in,
+// which just disables direct-upload (multipart still works fine through the
+// normal proxy for anything under ~4 MB) rather than opening the agent to
+// any website that happens to have a visitor's token.
+const allowedOrigins = new Set(
+  (process.env.STORVA_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+)
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+    res.setHeader('Access-Control-Max-Age', '600')
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
 app.use(express.json())
 
 const PORT = process.env.STORVA_AGENT_PORT || 5125

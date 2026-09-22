@@ -665,8 +665,38 @@ function FilesContent() {
     })
   }, [loadFiles])
 
-  const uploadSingleFile = useCallback((item: UploadFile) => {
+  // Uploads go straight from the browser to the agent (Tailscale URL), not
+  // through this Next.js app. Vercel hard-caps every serverless function's
+  // request body at 4.5 MB — fine for JSON, unworkable for photos/videos —
+  // and there is no config that raises it. Routing the upload bytes through
+  // Vercel at all means anything over ~4 MB always fails with 413, no matter
+  // what the agent or this route does, so the fix is to never send those
+  // bytes to Vercel in the first place.
+  //
+  // /api/agent/upload-token hands back a short-lived, upload-only token plus
+  // the agent's own address (after re-checking the same privacy rules the
+  // normal proxy enforces), then the browser uploads directly to the agent
+  // with that token. The agent allows this one cross-origin call via CORS
+  // (see STORVA_ALLOWED_ORIGINS in the agent's .env).
+  const uploadSingleFile = useCallback(async (item: UploadFile) => {
     if (!activeVol) return
+
+    let token: string
+    let agentUrl: string
+    try {
+      const tokenRes = await fetch(
+        `/api/agent/upload-token?vol=${activeVol.id}&path=${encodeURIComponent(currentPath || '')}`
+      )
+      if (!tokenRes.ok) throw new Error('token request failed')
+      const data = await tokenRes.json()
+      token = data.token
+      agentUrl = data.agentUrl
+    } catch {
+      setUploadQueue((current) => current.map((upload) => upload.id === item.id ? { ...upload, status: 'failed' } : upload))
+      showToast(`${item.file.name} gagal upload (tidak bisa mendapatkan izin akses)`, 'error')
+      return
+    }
+
     const xhr = new XMLHttpRequest()
     const formData = new FormData()
     const query = new URLSearchParams()
@@ -705,7 +735,8 @@ function FilesContent() {
     }
 
     setUploadQueue((current) => current.map((upload) => upload.id === item.id ? { ...upload, status: 'uploading', xhr } : upload))
-    xhr.open('POST', `/api/agent/upload?${query.toString()}`)
+    xhr.open('POST', `${agentUrl}/upload?${query.toString()}`)
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
     xhr.send(formData)
   }, [activeVol, currentPath])
 

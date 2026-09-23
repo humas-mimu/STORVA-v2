@@ -227,16 +227,7 @@ const diskStorage = multer.diskStorage({
     try {
       const { vol, error } = resolveVolume(req.query.vol as string | undefined)
       if (!vol) return cb(new Error(error as string), '')
-      const dir = resolveSafePath(vol.storage_path, (req.query.path as string) || '')
-      // multer does NOT create the destination folder itself — if it doesn't
-      // already exist on disk (e.g. uploading into a brand-new subfolder,
-      // or one created from another device that hasn't synced yet), the
-      // write fails with ENOENT and multer surfaces that as a bare,
-      // undiagnosable 500. Creating it here makes upload behave the same
-      // way "Save As" in any normal app does: the folder just gets made.
-      fsp.mkdir(dir, { recursive: true })
-        .then(() => cb(null, dir))
-        .catch((err) => cb(err, ''))
+      cb(null, resolveSafePath(vol.storage_path, (req.query.path as string) || ''))
     } catch (err: any) { cb(err, '') }
   },
   filename: (_req, file, cb) => cb(null, file.originalname),
@@ -835,21 +826,6 @@ function shutdown() {
 }
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
-
-// ── Global error handler ────────────────────────────────────────────────────
-// Must be registered last, and must keep all 4 parameters (err, req, res,
-// next) — Express only recognizes a middleware as an error handler when the
-// function takes exactly 4 arguments. Without this, any error thrown or
-// passed to next(err) anywhere above (including multer's storage callbacks)
-// falls through to Express's built-in handler, which sends a bare
-// "Internal Server Error" page with no JSON body and no server-side log line
-// — impossible to diagnose from the browser alone, exactly what happened
-// with the upload 500 this replaces.
-app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(`[Storva Agent] Unhandled error on ${req.method} ${req.path}:`, err?.message || err)
-  if (res.headersSent) return res.end()
-  res.status(500).json({ error: err?.message || 'Internal server error' })
-})
 
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function start() {
